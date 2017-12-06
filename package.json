@@ -1,0 +1,20 @@
+{
+  "name": "kablamazon",
+  "version": "1.0.0",
+  "description": "A command-line application that uses mySQL and Node to create a virtual store.",
+  "main": "kablamazonCustomer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Omar Imam",
+  "license": "ISC",
+  "dependencies": {
+    "inquirer": "^4.0.1",
+    "mysql": "^2.15.0"
+  },
+  "devDependencies": {
+    "eslint": "^4.12.1",
+    "prettier": "^1.8.2",
+    "prettier-eslint": "^8.2.5"
+  }
+}
