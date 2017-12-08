@@ -1,0 +1,7 @@
+{
+  "plugins": [],
+  "parser": "babel-eslint",
+  "ecmaFeatures": {
+    "modules": true
+  }
+}
