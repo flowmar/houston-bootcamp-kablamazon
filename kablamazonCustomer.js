@@ -185,60 +185,98 @@ async function confirm() {
   await inquirer
     .prompt(confirmation)
     .then(answer => {
-      if (answer) {
+      console.log(answer);
+      answerValue = answer.order_confirmation;
+      console.log(answerValue);
+      if (answerValue === true) {
         stockCheck(tAnswer.current_choice);
         console.log(
           chalk.bold.keyword("orange")("Item ID: " + tAnswer.current_choice)
         );
         confirmed = true;
+        console.log(confirmed + "CONFIRMEDDDAA");
         return true;
+      } else if ((answerValue = false)) {
+        confirmed = false;
+        log(confirmed + "AFVJADSOFGJDAS");
+        return false;
       }
     })
     .catch(err => console.error(err));
-  return true;
+  console.log(confirmed);
+  return confirmed;
 }
 
-//
+function restart() {
+  start();
+}
+// Start function to begin the program
 function start() {
+  // Display items
   displayItems()
+    // Ask Questions
     .then(_ => first())
     .then(_ => second())
+    // Check which product is chosen via ID number
     .then(_ => checkId())
     .then(_ =>
       setTimeout(() => {
         setUp();
       }, 3000)
     )
+    // Confirm that the order is correct
     .then(() => {
       setTimeout(function() {
         confirm()
-          .then(answer => {
-            if (answer) {
-              setTimeout(function compare() {
-                if (current_item_stock_quantity > requested_quantity) {
-                  // subtract requested_quantity from stock_quantity in a sql query
+          .then(confirmed => {
+            console.log("this is the answer" + confirmed);
+            if (confirmed === true) {
+              // Compare the stock and requested quantities
+              setTimeout(async function compare() {
+                if (current_item_stock_quantity >= requested_quantity) {
+                  let difference =
+                    current_item_stock_quantity - requested_quantity;
+                  // Subtract requested_quantity from stock_quantity in a sql query
+                  await connection.query(
+                    "UPDATE products SET stock_quantity = ? WHERE item_id = ?",
+                    [difference, current_choice],
+                    await function(err, response, fields) {
+                      if (err) {
+                        throw err;
+                      } else {
+                        log(
+                          chalk.bold.greenBright(
+                            "Transaction completed! Congratulations on your new items!"
+                          )
+                        );
+                        restart();
+                      }
+                    }
+                  );
                 } else {
-                  console.error(
-                    new Error(
-                      chalk.bold.red(
-                        "Not enough stock. \n !~TRANSACTION CANCELLED~! \n \n There was not enough stock to fulfill your order, so your transaction was cancelled. Please start over and try again. Thank you for shopping with Kablamazon.\n \n "
-                      )
+                  console.log(
+                    chalk.bold.red(
+                      "Not enough stock. \n !~TRANSACTION CANCELLED~! \n \n There was not enough stock to fulfill your order, so your transaction was cancelled. Please start over and try again. Thank you for shopping with Kablamazon.\n \n "
                     )
                   );
+                  restart();
                 }
               }, 2000);
+            } else if (confirmed === false) {
+              console.log("confirmed was false");
+              restart();
             }
           })
-          .catch(err => console.error(err))
-          .then(_ => {
-            if (0 === 0) {
-              Promise.resolve("Yahoo!");
-              return true;
-            } else {
-              Promise.reject(new Error("byeee"));
-              return false;
-            }
-          });
+          .catch(err => console.error(err));
+        // .then(_ => {
+        //   if (0 === 0) {
+        //     Promise.resolve("Yahoo!");
+        //     return true;
+        //   } else {
+        //     Promise.reject(new Error("byeee"));
+        //     return false;
+        //   }
+        // });
       }, 4000);
     });
 }
