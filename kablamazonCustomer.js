@@ -1,16 +1,20 @@
 // Dependencies
 const inquirer = require("inquirer");
 const mysql = require("mysql");
+const chalk = require("chalk");
 
 // Global Object to hold current answers
 let tAnswer = {};
 
 // Global variables
+const log = console.log;
 let item_quantity;
 let choice_name;
 let current_choice;
-let current_quantity;
+let requested_quantity;
 let confirmation = [];
+let confirmed;
+let current_item_stock_quantity;
 
 // MySQL connection configuration
 const connection = mysql.createConnection({
@@ -24,7 +28,9 @@ const connection = mysql.createConnection({
 connection.connect(function(err) {
   if (err) throw err;
   console.log(
-    "\nConnected! Welcome to Kablamazon, we are here to meet all of your electronic needs!\n"
+    chalk.blue(
+      "\nConnected! Welcome to Kablamazon, we are here to meet all of your electronic needs!\n"
+    )
   );
 });
 
@@ -74,14 +80,15 @@ async function displayItems() {
         // Loop through the results array to pull the necessary data from each object
         for (let i = 0; i < result.length; i++) {
           console.log(
-            "|| Item ID: " +
-              result[i].item_id +
-              " || " +
-              "Product: " +
-              result[i].product_name +
+            chalk.grey("|| ") +
+              chalk.magenta("Item ID: ") +
+              chalk.bold(result[i].item_id) +
+              chalk.grey(" || ") +
+              chalk.bold.keyword("orange")("Product: ") +
+              chalk.bold(result[i].product_name) +
               " .…...........….......….... " +
-              "Price: " +
-              result[i].price
+              chalk.whiteBright("Price: ") +
+              chalk.bold.greenBright(result[i].price)
           );
         }
       }
@@ -103,26 +110,11 @@ async function first() {
 // Ask for item quantity
 async function second() {
   await inquirer.prompt(questions[1]).then(answers => {
-    // Places the current_quantity in to the global object
-    tAnswer.current_quantity = answers.item_quantity;
-    console.log(tAnswer.current_quantity);
+    // Places the requested_quantity in to the global object
+    tAnswer.requested_quantity = answers.item_quantity;
+    console.log(tAnswer.requested_quantity);
     return true;
   });
-}
-
-// Confirm that the order is correct
-async function confirm() {
-  inquirer
-    .prompt(confirmation)
-    .then(answer => {
-      if (answer) {
-        stockCheck(tAnswer.current_choice);
-        console.log(tAnswer.current_choice);
-      }
-      return true;
-    })
-    .catch(err => console.error(err));
-  return true;
 }
 
 // Check the ID number entered by the customer against the product database and locate the name of the product
@@ -138,7 +130,7 @@ async function checkId() {
         tAnswer.choice_name = response[0].product_name;
         console.log("Loading...");
         setTimeout(() => {
-          console.log("Query result!");
+          console.log("Finished!");
         }, 2000);
         return tAnswer.choice_name;
       }
@@ -146,65 +138,108 @@ async function checkId() {
   );
 }
 
-async function printOut() {
+// Pulls variables from the tAnswer object and sets up variables and the order_confirmation question
+async function setUp() {
   choice_name = tAnswer.choice_name;
   current_choice = tAnswer.current_choice;
-  current_quantity = tAnswer.current_quantity;
+  requested_quantity = tAnswer.requested_quantity;
   confirmation = [
     {
       type: "confirm",
       name: "order_confirmation",
       message: [
         "You would like to purchase: " +
-          tAnswer.current_quantity +
+          tAnswer.requested_quantity +
           " of the item " +
           tAnswer.choice_name +
           ". Is this correct?"
       ]
     }
   ];
-  // console.log(
-  //   "Quantity: " +
-  //     tAnswer.current_quantity +
-  //     "\nItem Name: " +
-  //     tAnswer.choice_name
-  // );
-  // console.log(JSON.stringify(tAnswer));
-  // return true;
 }
 
+// Retrieves the current stock of the selected item
 async function stockCheck(current_choice) {
-  connection.query(
+  await connection.query(
     "SELECT stock_quantity FROM products WHERE item_id=?",
     [current_choice],
     await function(err, response, fields) {
       if (err) {
         console.error(err);
       } else {
-        console.log(response);
+        current_item_stock_quantity = response[0].stock_quantity;
+        console.log(
+          chalk.bold.green(
+            "Current item stock: " + current_item_stock_quantity
+          ) +
+            "    " +
+            chalk.bold.cyan("Number requested: " + requested_quantity)
+        );
       }
     }
   );
 }
 
-displayItems()
-  .then(_ => first())
-  .then(_ => second())
-  .then(_ => checkId())
-  .then(_ =>
-    setTimeout(() => {
-      printOut();
-      confirm();
-    }, 3000)
-  )
-  .then(_ => confirm())
-  .catch(err => console.error(err))
-  .then(_ => {
-    if (0 === 0) {
-      Promise.resolve("Yahoo!");
-      return true;
-    } else {
-      Promise.reject(new Error("byeee"));
-      return false;
-    }
-  });
+// Confirm that the order is correct
+async function confirm() {
+  await inquirer
+    .prompt(confirmation)
+    .then(answer => {
+      if (answer) {
+        stockCheck(tAnswer.current_choice);
+        console.log(
+          chalk.bold.keyword("orange")("Item ID: " + tAnswer.current_choice)
+        );
+        confirmed = true;
+        return true;
+      }
+    })
+    .catch(err => console.error(err));
+  return true;
+}
+
+//
+function start() {
+  displayItems()
+    .then(_ => first())
+    .then(_ => second())
+    .then(_ => checkId())
+    .then(_ =>
+      setTimeout(() => {
+        setUp();
+      }, 3000)
+    )
+    .then(() => {
+      setTimeout(function() {
+        confirm()
+          .then(answer => {
+            if (answer) {
+              setTimeout(function compare() {
+                if (current_item_stock_quantity > requested_quantity) {
+                  // subtract requested_quantity from stock_quantity in a sql query
+                } else {
+                  console.error(
+                    new Error(
+                      chalk.bold.red(
+                        "Not enough stock. \n !~TRANSACTION CANCELLED~! \n \n There was not enough stock to fulfill your order, so your transaction was cancelled. Please start over and try again. Thank you for shopping with Kablamazon.\n \n "
+                      )
+                    )
+                  );
+                }
+              }, 2000);
+            }
+          })
+          .catch(err => console.error(err))
+          .then(_ => {
+            if (0 === 0) {
+              Promise.resolve("Yahoo!");
+              return true;
+            } else {
+              Promise.reject(new Error("byeee"));
+              return false;
+            }
+          });
+      }, 4000);
+    });
+}
+start();

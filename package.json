@@ -9,6 +9,7 @@
   "author": "Omar Imam",
   "license": "ISC",
   "dependencies": {
+    "chalk": "^2.3.0",
     "inquirer": "^4.0.1",
     "mysql": "^2.15.0"
   },
