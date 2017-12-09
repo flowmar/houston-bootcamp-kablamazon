@@ -39,8 +39,9 @@ let questions = [
   {
     type: "input",
     name: "customer_choice",
-    message:
-      "\nPlease enter the ID number of the item that you wish to purchase",
+    message: chalk.bold.magenta(
+      "\nPlease enter the ID number of the item that you wish to purchase"
+    ),
 
     // Ensure that the value is between 1 and 11
     validate: function(value) {
@@ -56,7 +57,9 @@ let questions = [
   {
     type: "input",
     name: "item_quantity",
-    message: "Please enter the quantity of the item that you wish to purchase.",
+    message: chalk.bold.magenta(
+      "Please enter the quantity of the item that you wish to purchase."
+    ),
     validate: function(value) {
       // Regex -- Matches at the beginning of the line, a number 0-9 zero or more times followed by another digit from the same range zero or more times and the second number must be the end of the line
       if (value.match(/^[0-9]?[0-9]?$/)) {
@@ -72,7 +75,7 @@ let questions = [
 async function displayItems() {
   await connection.query(
     "SELECT item_id, product_name, price FROM products",
-    function(err, result, fields) {
+    await function(err, result, fields) {
       if (err) throw err;
       else {
         let resultsLength = result.length;
@@ -80,7 +83,7 @@ async function displayItems() {
         // Loop through the results array to pull the necessary data from each object
         for (let i = 0; i < result.length; i++) {
           console.log(
-            chalk.grey("|| ") +
+            chalk.grey("\n|| ") +
               chalk.magenta("Item ID: ") +
               chalk.bold(result[i].item_id) +
               chalk.grey(" || ") +
@@ -161,19 +164,27 @@ async function setUp() {
 // Retrieves the current stock of the selected item
 async function stockCheck(current_choice) {
   await connection.query(
-    "SELECT stock_quantity FROM products WHERE item_id=?",
+    "SELECT stock_quantity, price FROM products WHERE item_id=?",
     [current_choice],
     await function(err, response, fields) {
       if (err) {
         console.error(err);
       } else {
         current_item_stock_quantity = response[0].stock_quantity;
+        current_item_price = response[0].price;
         console.log(
           chalk.bold.green(
             "Current item stock: " + current_item_stock_quantity
           ) +
             "    " +
             chalk.bold.cyan("Number requested: " + requested_quantity)
+        );
+        log(
+          chalk.bold.yellow("\nItem Unit Price: $" + current_item_price) +
+            chalk.bold.keyword("orange")(
+              "\nTotal price (Unit Price x Quantity): "
+            ) +
+            chalk.bold.red("$" + current_item_price * requested_quantity)
         );
       }
     }
@@ -185,25 +196,25 @@ async function confirm() {
   await inquirer
     .prompt(confirmation)
     .then(answer => {
-      console.log(answer);
+      // console.log(answer);
       answerValue = answer.order_confirmation;
-      console.log(answerValue);
+      // console.log(answerValue);
       if (answerValue === true) {
         stockCheck(tAnswer.current_choice);
         console.log(
           chalk.bold.keyword("orange")("Item ID: " + tAnswer.current_choice)
         );
         confirmed = true;
-        console.log(confirmed + "CONFIRMEDDDAA");
+        // console.log(confirmed + "CONFIRMEDDDAA");
         return true;
       } else if ((answerValue = false)) {
         confirmed = false;
-        log(confirmed + "AFVJADSOFGJDAS");
+        // log(confirmed + "AFVJADSOFGJDAS");
         return false;
       }
     })
     .catch(err => console.error(err));
-  console.log(confirmed);
+  // console.log(confirmed);
   return confirmed;
 }
 
@@ -228,8 +239,8 @@ function start() {
     .then(() => {
       setTimeout(function() {
         confirm()
-          .then(confirmed => {
-            console.log("this is the answer" + confirmed);
+          .then(_ => {
+            // console.log("this is the answer" + confirmed);
             if (confirmed === true) {
               // Compare the stock and requested quantities
               setTimeout(async function compare() {
@@ -262,21 +273,12 @@ function start() {
                   restart();
                 }
               }, 2000);
-            } else if (confirmed === false) {
-              console.log("confirmed was false");
+            } else if (confirmed === undefined) {
+              console.log(chalk.bold.red("Transaction was cancelled by user."));
               restart();
             }
           })
           .catch(err => console.error(err));
-        // .then(_ => {
-        //   if (0 === 0) {
-        //     Promise.resolve("Yahoo!");
-        //     return true;
-        //   } else {
-        //     Promise.reject(new Error("byeee"));
-        //     return false;
-        //   }
-        // });
       }, 4000);
     });
 }
