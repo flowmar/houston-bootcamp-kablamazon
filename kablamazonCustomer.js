@@ -150,13 +150,13 @@ async function setUp() {
     {
       type: "confirm",
       name: "order_confirmation",
-      message: [
+      message: chalk.bold.red([
         "You would like to purchase: " +
           tAnswer.requested_quantity +
           " of the item " +
           tAnswer.choice_name +
           ". Is this correct?"
-      ]
+      ])
     }
   ];
 }
