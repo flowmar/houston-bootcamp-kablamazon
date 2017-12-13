@@ -1,4 +1,8 @@
 node_modules
 inquirer-practice.js
 .DS_Store
-
+kablamazonManager.js
+kablamazonSupervisor.js
+instructions.md
+.eslintrc
+README.md

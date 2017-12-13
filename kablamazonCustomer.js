@@ -102,7 +102,7 @@ async function displayItems() {
 // Ask for item id number
 async function first() {
   await inquirer.prompt(questions[0]).then(answers => {
-    console.log(answers);
+    // console.log(answers);
     // Places the customer_choice into the global object
     tAnswer.current_choice = answers.customer_choice;
     console.log(tAnswer.current_choice);
@@ -267,15 +267,23 @@ function start() {
                 } else {
                   console.log(
                     chalk.bold.red(
-                      "Not enough stock. \n !~TRANSACTION CANCELLED~! \n \n There was not enough stock to fulfill your order, so your transaction was cancelled. Please start over and try again. Thank you for shopping with Kablamazon.\n \n "
+                      "Not enough stock. \n !~TRANSACTION CANCELLED~! \n \n There was not enough stock to fulfill your order, so your transaction was cancelled. Please start over and try again. \n You will return to the main menu in 5 seconds. \nThank you for shopping with Kablamazon.\n \n "
                     )
                   );
-                  restart();
+                  setTimeout(_ => {
+                    restart();
+                  }, 5000);
                 }
               }, 2000);
             } else if (confirmed === undefined) {
-              console.log(chalk.bold.red("Transaction was cancelled by user."));
-              restart();
+              console.log(
+                chalk.bold.red(
+                  "Transaction was cancelled by user. \n You will be returned to the main menu in 5 seconds."
+                )
+              );
+              setTimeout(_ => {
+                restart();
+              }, 5000);
             }
           })
           .catch(err => console.error(err));
